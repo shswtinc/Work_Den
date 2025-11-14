@@ -3,6 +3,7 @@ import { APIError } from "../utils/api-error.js";
 import { User } from "../models/user.models.js";
 import { APIResponse } from "../utils/api-response.js";
 import { emailVerificationMail, sendMail } from '../utils/email.js';
+import { use } from "react";
 const generateAccessAndRefreshTokens = async (userId) => {
     //now that we have successfulyy created (or verified the existence) that user exists we need to find the user
     try {
@@ -66,4 +67,46 @@ const registerUser = asyncHandler(async (req, res) => {
     
 });
 
-export { registerUser };
+const login = asyncHandler(async (req, res) => {
+    const { email, password, username } = req.body;
+    if (!username || !email) {
+        throw new APIError(400,"Username or email is required")
+    }
+    const user =  await User.findOne({ email })//here we found if user exists or not?
+    if (!user) {//logic for not existing
+        throw new APIError(400,"User does not exist")
+    }
+    //now here we will write logic for if user exists, then we need ->
+    //check password
+    const isPasswordValid = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+        throw new APIError(400, "Password is invalid");
+    }
+    //upon pass correct, generate all the tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+    //just storing email and password
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -emailVerificationToken -emailVerificationExpiry");
+    const options = {
+        httpOnly: true,
+        secure: true,
+    }
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new APIResponse(
+                200,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken,
+                },
+                "User logged in successfully"
+            )
+        )
+});
+
+
+export { registerUser, generateAccessAndRefreshTokens, login };
+    
