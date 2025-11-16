@@ -71,7 +71,7 @@ const forgotPasswordMail = (username, passwordResetURL) => {
     return {
         body: {
             name: `Hi! ${username}`,
-            intro: `You have received this email because a password reset request for your account was received.`,
+            intro: [`You have received this email because a password reset request for your account was received.`],
             action: {
                 instructions: `Click the button to reset your password`,
                 button: {
@@ -79,7 +79,10 @@ const forgotPasswordMail = (username, passwordResetURL) => {
                     text: `Reset your password`,
                     link: passwordResetURL,
                 }
-            }
+            },
+            outro: [ 
+                `If you did not request a password reset, please ignore this email.`
+            ]
         }
     }
 }
